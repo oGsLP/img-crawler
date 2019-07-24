@@ -4,8 +4,10 @@
 # from selenium import webdriver
 
 import ssl
+import datetime
 import time
 import requests
+from util.change_scale import encode_b64
 import urllib.request
 
 import json
@@ -15,6 +17,10 @@ import sys
 request_params = {"ajwvr": "6", "domain": "100505", "domain_op": "100505", "feed_type": "0", "is_all": "1",
                   "is_tag": "0", "is_search": "0"}
 # profile_request_params = {"profile_ftype":"1","is_all":"1"}
+
+current_year = datetime.datetime.now().year % 100;
+current_month = datetime.datetime.now().month;
+current_day = datetime.datetime.now().day;
 
 weibo_url = "https://m.weibo.cn/"
 # WEIBO_SECOND_PROFILE_WEIBO 全部
@@ -68,13 +74,20 @@ total_pics_num = 0
 # urllib.urlopen("https://no-valid-cert", context=context)
 
 
+
+
 # 保存图片到本地
-def save_image(img_src, id, pid, i):
+def save_image(img_src, date, pid, i):
     # print(img_src)
     if not os.path.exists(str(user_id)):
         os.makedirs(str(user_id))
-    _name = str(user_id) + '/' + str(id) + '_' + str(i) + '_' + str(pid) + '.jpg'
-    print(_name)
+    if date[0:2] == "20":
+        date = date[2:]
+    else:
+        if len(date) == 5:
+            date = str(current_year) + "-" + date
+    _name = str(user_id) + '/' + str(date) + '_' + str(encode_b64(int(i)))[2:] + '_' + str(pid + 1) + '.jpg'
+    print("  %s" % _name)
     # urllib.request.urlretrieve(img_src, _name)
     if not os.path.exists(_name):
         r = requests.get(img_src)
@@ -82,9 +95,9 @@ def save_image(img_src, id, pid, i):
         # 使用with语句可以不用自己手动关闭已经打开的文件流
         with open(_name, "wb") as f:  # 开始写文件，wb代表写二进制文件
             f.write(r.content)
-        print("爬取完成")
+        print("    爬取完成")
     else:
-        print("文件已存在")
+        print("    文件已存在")
 
 
 # 获取当前页的数据
@@ -98,7 +111,7 @@ def get_cur_page_weibo(_json, i):
         cur_page -= 1
     else:
         cur_page = i
-    print('当前页数：' + str(cur_page) + ';总页数' + str(page_total-1))
+    print('当前页数：' + str(cur_page) + ';总页数' + str(page_total - 1))
     # 打印微博
     for card in _cards:
         if card['card_type'] == 9:
@@ -131,7 +144,7 @@ for i in range(1, page_total):
     # print(_url)
     if i > 1:
         _url = _url + '&page_type=03&page=' + str(i)
-    print(_url)
+    # print(_url)
     response = requests.get(_url, headers=headers)
     # print(response.url)
     html = response.text
@@ -143,3 +156,5 @@ for i in range(1, page_total):
         if i % 10 == 0:
             # 每爬10页休眠10秒
             time.sleep(10)
+
+
