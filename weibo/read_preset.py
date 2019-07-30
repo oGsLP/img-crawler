@@ -2,9 +2,15 @@ def read_preset(path):
     users = []
     with open(path) as fr:
         for line in fr:
-            if (line[0] == "#"):
+            if line[0] == "#":
                 continue
             else:
-                [name, uid] = line.strip().split(" ")
-                users.append({'name': name, 'uid': uid})
+                args = line.strip().split(" ")
+                if len(args) == 2:
+                    users.append({'name': args[0], 'uid': args[1]})
+                elif len(args) == 1 & len(line.strip()) == 10:
+                    users.append({'name': None, 'uid': line.strip()})
+                else:
+                    print("Wrong arguments: %s"
+                          % line)
     return users
