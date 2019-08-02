@@ -1,24 +1,24 @@
 # from selenium import webdriver
 
 import ssl
-import datetime
+import re
+
 import time
 import requests
+
+import util.current as current
 from util.change_scale import encode_b64
 from weibo.read_preset import read_preset
-import urllib.request
 
 import json
 import os
-import sys
 
 request_params = {"ajwvr": "6", "domain": "100505", "domain_op": "100505", "feed_type": "0", "is_all": "1",
                   "is_tag": "0", "is_search": "0"}
 # profile_request_params = {"profile_ftype":"1","is_all":"1"}
 
-current_year = datetime.datetime.now().year % 100
-current_month = datetime.datetime.now().month
-current_day = datetime.datetime.now().day
+
+y_n_regex = '([yY](es)?)|([Nn](o|ot)?)'
 
 weibo_url = "https://m.weibo.cn/"
 preset_default_path = "./weibo_uid.txt"
@@ -50,6 +50,7 @@ cur_page = 1
 n = 1
 page_pics_num = 0
 total_pics_num = 0
+none_sign = False
 
 headers = {
     'Accept': 'application/json, text/plain, */*',
@@ -66,7 +67,7 @@ headers = {
 }
 
 page_total = 0
-uid = "00000000"
+uid = ""
 name = ""
 
 
@@ -74,39 +75,47 @@ name = ""
 # context = ssl._create_unverified_context()
 # urllib.urlopen("https://no-valid-cert", context=context)
 
-def generate_url(uid):
-    return 'https://m.weibo.cn/api/container/getIndex?containerid=' + pre_id + uid + '_-_' \
-           + weibo_type + '&luicode=10000011&lfid=' + post_id + uid
+def generate_url(_uid):
+    return 'https://m.weibo.cn/api/container/getIndex?containerid=' + pre_id + _uid + '_-_' \
+           + weibo_type + '&luicode=10000011&lfid=' + post_id + _uid
 
 
-def crawl_imgs_of_one_user(user):
+def crawl_imgs_of_one_user(_user):
     global uid, name
-    uid = user["uid"]
-    name = "" if (user["name"] is None) else user["name"]
+    uid = _user["uid"]
+    name = "" if (_user["name"] is None) else _user["name"]
     _url = generate_url(uid)
 
     # 总页数
-    global page_total
+    global page_total, none_sign
     page_total = int(get_total_page(_url))
+    none_sign = False
 
     # 遍历每一页
     for i in range(1, page_total):
-        headers['Cookie'] = cookie
-        # print(_url)
-        if i > 1:
-            _url = _url + '&page_type=03&page=' + str(i)
-        # print(_url)
-        response = requests.get(_url, headers=headers)
-        # print(response.url)
-        html = response.text
-        _json = json.loads(html)
-        get_cur_page_weibo(_json, i)
-        # 休眠1秒
-        time.sleep(1)
-        if page_total > 10:
-            if i % 10 == 0:
-                # 每爬10页休眠10秒
-                time.sleep(10)
+        if none_sign:
+            print('  (无) 当前页数: ' + str(i) + ', 总页数: ' + str(page_total - 1) + ";")
+            time.sleep(0.2)
+        else:
+            headers['Cookie'] = cookie
+            # print(_url)
+            if i > 1:
+                _url = _url + '&page_type=03&page=' + str(i)
+            # print(_url)
+            response = requests.get(_url, headers=headers)
+            # print(response.url)
+            html = response.text
+            _json = json.loads(html)
+            get_cur_page_weibo(_json, i)
+            # 休眠1秒
+            time.sleep(1)
+            if page_total > 10:
+                if i % 10 == 0 and not none_sign:
+                    # 每爬10页休眠10秒
+                    time.sleep(10)
+    print()
+    print("用户[%s]: %s 爬取完成" % (uid, name))
+    print()
 
 
 # 保存图片到本地
@@ -119,14 +128,14 @@ def save_image(img_src, date, pid, i):
         date = date[2:]
     else:
         if len(date) == 5:
-            date = str(current_year) + "-" + date
+            date = str(current.get_year()) + "-" + date
     _name = _dir + '/' + str(date) + '_' + str(encode_b64(int(i)))[2:] + '_' + str(pid + 1) + '.jpg'
-    # urllib.request.urlretrieve(img_src, _name)
+
     if not os.path.exists(_name):
         r = requests.get(img_src)
         r.raise_for_status()
-        # 使用with语句可以不用自己手动关闭已经打开的文件流
-        with open(_name, "wb") as f:  # 开始写文件，wb代表写二进制文件
+
+        with open(_name, "wb") as f:
             f.write(r.content)
         print("    %s  爬取完成" % _name)
     else:
@@ -136,20 +145,21 @@ def save_image(img_src, date, pid, i):
 # 获取当前页的数据
 def get_cur_page_weibo(_json, i):
     global name
-    if i == 1 and len(name) == 0:
-        name = _json['data']['cards'][0]['mblog']['user']['screen_name']
-    print("Begin to crawl user [%s]: %s" % (uid, name))
+    if i == 1:
+        if len(name) == 0:
+            name = _json['data']['cards'][0]['mblog']['user']['screen_name']
+        print("开始爬取 用户[%s]: %s" % (uid, name))
 
     _cards = _json['data']['cards']
     _cardListInfo = _json['data']['cardlistInfo']
     global cur_page
     # page_total = _cardListInfo['total']  # 你要爬取的微博的页数
-    cur_page = _cardListInfo['page']  # 当前微博页数
-    if (cur_page != None):
-        cur_page -= 1
-    else:
-        cur_page = i
-    print('  当前页数：' + str(cur_page) + ';总页数' + str(page_total - 1))
+    cur_page = i  # 当前微博页数
+    global none_sign
+    if _cardListInfo['page'] is None:
+        none_sign = True
+
+    print('  当前页数: ' + str(cur_page) + ', 总页数: ' + str(page_total - 1)+";")
     # 打印微博
     for card in _cards:
         if card['card_type'] == 9:
@@ -160,7 +170,7 @@ def get_cur_page_weibo(_json, i):
                         # 保存图片到本地
                         save_image(card['mblog']['pics'][x]['large']['url'], card['mblog']['created_at'], x,
                                    card['mblog']['mid'])
-                        time.sleep(2)
+                        time.sleep(1)
                         # print(card['mblog'])
 
 
@@ -174,9 +184,9 @@ def get_total_page(_url):
     return __json['data']['cardlistInfo']['total']  # 你要爬取的微博的页数
 
 
-use_preset = input('use preset or not? y|n')
+use_preset = input('use preset or not? y|n: ')
 
-if (use_preset):
+if re.match(y_n_regex, use_preset):
     preset_path = input('Input preset path (default "%s"): ' % preset_default_path)
     if len(preset_path) != 0 & os.path.exists(preset_path):
         print("  preset path exists")
@@ -187,7 +197,7 @@ if (use_preset):
     users = read_preset(preset_path)
     for user in users:
         crawl_imgs_of_one_user(user)
+        time.sleep(1)
 else:
     _uid = input('input weibo: ')
-    user = {"name": None, "uid": _uid}
-    crawl_imgs_of_one_user(user)
+    crawl_imgs_of_one_user({"name": None, "uid": _uid})
