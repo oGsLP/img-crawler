@@ -19,6 +19,8 @@ request_params = {"ajwvr": "6", "domain": "100505", "domain_op": "100505", "feed
 
 
 y_n_regex = '([yY](es)?)|([Nn](o|ot)?)'
+y_regex = '[yY](es)?'
+n_regex = '[Nn](o|ot)?'
 
 weibo_url = "https://m.weibo.cn/"
 preset_default_path = "./weibo_uid.txt"
@@ -69,6 +71,7 @@ headers = {
 page_total = 0
 uid = ""
 name = ""
+root = ""
 
 
 # This restores the same behavior as before.
@@ -121,7 +124,7 @@ def crawl_imgs_of_one_user(_user):
 # 保存图片到本地
 def save_image(img_src, date, pid, i):
     # print(img_src)
-    _dir = str(name)
+    _dir = root + str(name)
     if not os.path.exists(_dir):
         os.makedirs(_dir)
     if date[0:2] == "20":
@@ -159,7 +162,7 @@ def get_cur_page_weibo(_json, i):
     if _cardListInfo['page'] is None:
         none_sign = True
 
-    print('  当前页数: ' + str(cur_page) + ', 总页数: ' + str(page_total - 1)+";")
+    print('  当前页数: ' + str(cur_page) + ', 总页数: ' + str(page_total - 1) + ";")
     # 打印微博
     for card in _cards:
         if card['card_type'] == 9:
@@ -184,20 +187,41 @@ def get_total_page(_url):
     return __json['data']['cardlistInfo']['total']  # 你要爬取的微博的页数
 
 
-use_preset = input('use preset or not? y|n: ')
-
-if re.match(y_n_regex, use_preset):
-    preset_path = input('Input preset path (default "%s"): ' % preset_default_path)
-    if len(preset_path) != 0 & os.path.exists(preset_path):
-        print("  preset path exists")
+def set_root_path():
+    global root
+    val = input("3)input your object dir path (default current dir): ").strip()
+    if len(val) == 0:
+        print("  use current directory...")
+    elif not os.path.exists(val):
+        print("  path '%s' does not exist, will use current directory..." % val)
     else:
-        preset_path = preset_default_path
-        print('  preset path doesn\'t exist, will use default path: "%s"' %
-              preset_path)
-    users = read_preset(preset_path)
-    for user in users:
-        crawl_imgs_of_one_user(user)
-        time.sleep(1)
-else:
-    _uid = input('input weibo: ')
-    crawl_imgs_of_one_user({"name": None, "uid": _uid})
+        root = val
+
+
+def main():
+    use_preset = input('1)use preset or not? y|n: ').strip()
+    while not re.match(y_n_regex, use_preset):
+        print("  wrong input, try again! ")
+        use_preset = input('2)use preset or not? y|n: ').strip()
+
+    if re.match(y_regex, use_preset):
+        preset_path = input('input preset path (default "%s"): ' % preset_default_path).strip()
+        if len(preset_path) == 0 or os.path.exists(preset_path):
+            print("  preset path exists")
+        else:
+            preset_path = preset_default_path
+            print('  preset path does not exist, will use default path: "%s"' %
+                  preset_path)
+        users = read_preset(preset_path)
+        set_root_path()
+        for user in users:
+            crawl_imgs_of_one_user(user)
+            time.sleep(1)
+    elif re.match(n_regex, use_preset):
+        _uid = input('2)input weibo id: ')
+        set_root_path()
+        crawl_imgs_of_one_user({"name": None, "uid": _uid})
+
+
+if __name__ == '__main__':
+    main()
