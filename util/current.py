@@ -1,13 +1,17 @@
-import datetime
+from datetime import datetime
 
 
 def get_year():
-    return datetime.datetime.now().year % 100
+    return datetime.now().year % 100
 
 
 def get_month():
-    return datetime.datetime.now().month
+    return datetime.now().month
 
 
 def get_day():
-    return datetime.datetime.now().day
+    return datetime.now().day
+
+
+def get_date():
+    return datetime.now().strftime('%Y-%m-%d')[2:]

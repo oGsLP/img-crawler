@@ -13,6 +13,7 @@ import os
 import util.current as current
 from util.change_scale import encode_b64
 from weibo.read_preset import read_preset
+from util.str_check import is_contain_chinese
 
 # Fixed global variables ------------------
 
@@ -130,7 +131,9 @@ def save_image(img_src, date, pid, i):
     _dir = root + str(name)
     if not os.path.exists(_dir):
         os.makedirs(_dir)
-    if date[0:2] == "20":
+    if is_contain_chinese(date):
+        date = current.get_date()
+    elif date[0:2] == "20":
         date = date[2:]
     else:
         if len(date) == 5:
