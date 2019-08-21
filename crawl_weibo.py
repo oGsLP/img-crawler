@@ -61,7 +61,7 @@ headers = {
 cookie = 'MLOGIN=0; _T_WM=ec3cbb7caac2b6d765aa1c64e065ee7c; OUTFOX_SEARCH_USER_ID_NCOO=200622491.85643607; WEIBOCN_FROM=1110006030; M_WEIBOCN_PARAMS=luicode%3D10000011%26lfid%3D2302832101822767%26from%3Dpage_100306%26fid%3D2304132101822767_-_WEIBO_SECOND_PROFILE_PIC%26uicode%3D10000011'
 
 preset_default_path = "./weibo_uid.txt"
-root = "_pics"
+root = "_pics/"
 
 # -------------------------------------------
 
@@ -76,6 +76,7 @@ none_sign = False
 page_total = 0
 uid = ""
 name = ""
+
 
 # -------------------------------------------
 
@@ -103,7 +104,7 @@ def crawl_imgs_of_one_user(_user):
             time.sleep(0.2)
         else:
             headers['Cookie'] = cookie
-            # print(_url)
+            print(_url)
             if i > 1:
                 _url = _url + '&page_type=03&page=' + str(i)
             # print(_url)
@@ -208,17 +209,22 @@ def crawl():
 
     if re.match(y_regex, use_preset):
         preset_path = input('  input preset path (default "%s"): ' % preset_default_path).strip()
-        if len(preset_path) == 0 or os.path.exists(preset_path):
+        path_len = len(preset_path)
+        if not path_len == 0 and os.path.exists(preset_path):
             print("    preset path exists")
         else:
             preset_path = preset_default_path
-            print('    preset path does not exist, will use default path: "%s"' %
-                  preset_path)
-        users = read_preset(preset_path)
-        set_root_path()
-        for user in users:
-            crawl_imgs_of_one_user(user)
-            time.sleep(1)
+            if path_len == 0:
+                print('    will use default path: "%s"' %
+                      preset_path)
+            else:
+                print('    preset path does not exist, will use default path: "%s"' %
+                      preset_path)
+            users = read_preset(preset_path)
+            set_root_path()
+            for user in users:
+                crawl_imgs_of_one_user(user)
+                time.sleep(1)
     elif re.match(n_regex, use_preset):
         _uid = input('2)input weibo id: ')
         set_root_path()
