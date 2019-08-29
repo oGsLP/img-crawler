@@ -213,7 +213,7 @@ def crawl():
     if re.match(y_regex, use_preset):
         preset_path = input('  input preset path (default "%s"): ' % preset_default_path).strip()
         path_len = len(preset_path)
-        if not path_len == 0 and os.path.exists(preset_path):
+        if not (path_len == 0 and os.path.exists(preset_path)):
             print("    preset path exists")
         else:
             preset_path = preset_default_path
