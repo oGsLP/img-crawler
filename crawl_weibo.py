@@ -213,7 +213,7 @@ def crawl():
     if re.match(y_regex, use_preset):
         preset_path = input('  input preset path (default "%s"): ' % preset_default_path).strip()
         path_len = len(preset_path)
-        if not (path_len == 0 and os.path.exists(preset_path)):
+        if not path_len == 0 and os.path.exists(preset_path):
             print("    preset path exists")
         else:
             preset_path = preset_default_path
@@ -223,11 +223,11 @@ def crawl():
             else:
                 print('    preset path does not exist, will use default path: "%s"' %
                       preset_path)
-            users = read_preset(preset_path)
-            set_root_path()
-            for user in users:
-                crawl_imgs_of_one_user(user)
-                time.sleep(1)
+        users = read_preset(preset_path)
+        set_root_path()
+        for user in users:
+            crawl_imgs_of_one_user(user)
+            time.sleep(1)
     elif re.match(n_regex, use_preset):
         _uid = input('2)input weibo id: ')
         set_root_path()
