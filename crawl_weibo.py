@@ -128,17 +128,20 @@ def crawl_imgs_of_one_user(_user):
 # 保存图片到本地
 def save_image(img_src, date, pid, i):
     # print(img_src)
+    _date = time.strptime(date,"%a %b %d %H:%M:%S +0800 %Y")
+    _date = f"{_date[0]%100}-{_date[1]}-{_date[2]}"
     _dir = root + str(name)
     if not os.path.exists(_dir):
         os.makedirs(_dir)
-    if is_contain_chinese(date):
-        date = current.get_date()
-    elif date[0:2] == "20":
-        date = date[2:]
-    else:
-        if len(date) == 5:
-            date = str(current.get_year()) + "-" + date
-    _name = _dir + '/' + str(date) + '_' + str(encode_b64(int(i)))[2:] + '_' + str(pid + 1) + '.jpg'
+
+    # if is_contain_chinese(date):
+    #     date = current.get_date()
+    # elif date[0:2] == "20":
+    #     date = date[2:]
+    # else:
+    #     if len(date) == 5:
+    #         date = str(current.get_year()) + "-" + date
+    _name = _dir + '/' + str(_date) + '_' + str(encode_b64(int(i)))[2:] + '_' + str(pid + 1) + '.jpg'
 
     if not os.path.exists(_name):
         r = requests.get(img_src)
@@ -172,15 +175,15 @@ def get_cur_page_weibo(_json, i):
     # 打印微博
     for card in _cards:
         if card['card_type'] == 9:
-            if card['mblog']['weibo_position'] == 1:
-                card['mblog'].setdefault('pics', False)
-                if card['mblog']['pics']:
-                    for x in range(len(card['mblog']['pics'])):
-                        # 保存图片到本地
-                        save_image(card['mblog']['pics'][x]['large']['url'], card['mblog']['created_at'], x,
-                                   card['mblog']['mid'])
-                        time.sleep(1)
-                        # print(card['mblog'])
+            # if card['mblog']['weibo_position'] == 1:
+            card['mblog'].setdefault('pics', False)
+            if card['mblog']['pics']:
+                for x in range(len(card['mblog']['pics'])):
+                    # 保存图片到本地
+                    save_image(card['mblog']['pics'][x]['large']['url'], card['mblog']['created_at'], x,
+                               card['mblog']['mid'])
+                    time.sleep(1)
+                    # print(card['mblog'])
 
 
 # 获取总页数
